@@ -4,8 +4,8 @@
 
 ## Quartus Prime
 # Quartus Project Files
-*.qpf # Quartus Project File
-*.qsf # Quartus (Project) Settings File
+*.qpf 	# Quartus Project File
+*.qsf 	# Quartus (Project) Settings File
 *.qws	# Quartus Workspace File - User settings, Window position, etc...
 
 *sopc_*
