@@ -5,6 +5,9 @@
 # to native line endings on checkout.
 *.vhd text
 
+# Declare .gitignore will always have LF line endings on checkout.
+.gitignore text eol=lf
+
 # Declare files that will always have CRLF line endings on checkout.
 #*.sln text eol=crlf
 
