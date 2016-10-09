@@ -2,7 +2,12 @@
 # Ignore file for CORDIC development
 ################################################################################
 
-# Quartus Prime
+## Quartus Prime
+# Quartus Project Files
+*.qpf	# Quartus Project File
+*.qsf	# Quartus (Project) Settings File
+
+
 *sopc_*
 *.jdi
 *.ptf.*
