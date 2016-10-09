@@ -8,8 +8,7 @@ use IEEE.numeric_std.all;
 entity cordic_core is
 	GENERIC
 	(
-		WIDTH		: integer := 32;
-		ROUNDS	: integer := 16
+		WIDTH		: integer := 32
 	);
 	PORT
 	(
@@ -18,6 +17,8 @@ entity cordic_core is
 		Xin		: in  std_logic_vector(WIDTH-1 downto 0);
 		Yin		: in  std_logic_vector(WIDTH-1 downto 0);
 		thetain	: in  std_logic_vector(WIDTH-1 downto 0);
+		
+		delta		: in 	std_logic_vector(13 downto 0);
 		
 		Xout		: out std_logic_vector(WIDTH-1 downto 0);
 		Yout		: out std_logic_vector(WIDTH-1 downto 0);
@@ -36,9 +37,9 @@ architecture BHV of cordic_core is
 	 ---------------------------------------------------------------------------------------
 	 -- Signals
 	 ---------------------------------------------------------------------------------------
-	 signal dir	: boolean;
- begin
-	DIR_PROC : process(mode, Yin, thetain)
+	signal dir	: boolean;
+	begin
+	DIR_PROC :	process(mode, Yin, thetain)
 	begin
 		-- dir will default false
 		dir <= false;
@@ -51,7 +52,24 @@ architecture BHV of cordic_core is
 				dir <= (signed(thetain) >= 0);
 				
 			when OTHERS =>
-				-- Should next read here
+				NULL;
+		end case;
+	end process;
+	
+	ROT_PROC :	process(dir, Xin, Yin, thetaIn, delta)
+	begin
+		case dir is
+			when true	=>
+				Xout 		<= std_logic_vector(unsigned(Xin) - unsigned(Yin));
+				Yout 		<= std_logic_vector(unsigned(Yin) + unsigned(Xin));
+				thetaOut <= std_logic_vector(unsigned(thetaIn) - unsigned(delta));
+				
+			when false	=>
+				Xout 		<= std_logic_vector(unsigned(Xin) + unsigned(Yin));
+				Yout 		<= std_logic_vector(unsigned(Yin) - unsigned(Xin));
+				thetaOut <= std_logic_vector(unsigned(thetaIn) + unsigned(delta));
+					
+			when OTHERS =>
 				NULL;
 		end case;
 	end process;
