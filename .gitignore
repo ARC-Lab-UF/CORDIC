@@ -6,14 +6,14 @@
 # Quartus Project Files
 *.qpf	# Quartus Project File
 *.qsf	# Quartus (Project) Settings File
-
+*.qws	# Quartus Workspace File - User settings, Window position, etc...
 
 *sopc_*
 *.jdi
 *.ptf.*
 *.sof
 *.pof
-*.qws
+
 *.smsg
 *_inst.vhd
 *_generation_script*
