@@ -8,7 +8,7 @@ use IEEE.numeric_std.all;
 entity cordic_core is
 	GENERIC
 	(
-		WIDTH		: integer := 32
+		WIDTH		: positive := 32
 	);
 	PORT
 	(
