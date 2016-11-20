@@ -69,18 +69,14 @@ begin
 	G1: for I in 0 to ROUNDS generate
 		X_I : process(clk, rst, Xnext)
 		begin
-			if (rst = '1') then
-				X(I)	<= (OTHERS => '0');
-			elsif (rising_edge(clk)) then
+			if (rising_edge(clk)) then
 				X(I)	<= Xnext(I);
 			end if;
 		end process X_I;
 
 		Y_I : process(clk, rst, Ynext)
 		begin
-			if (rst = '1') then
-				Y(I)	<= (OTHERS => '0');
-			elsif (rising_edge(clk)) then
+			if (rising_edge(clk)) then
 				Y(I)	<= Ynext(I);
 			end if;
 		end process Y_I;
@@ -88,28 +84,26 @@ begin
 		
 		THETA_I : process(clk, rst, THETAnext)
 		begin
-			if (rst = '1') then
-				THETA(I)	<= (OTHERS => '0');
-			elsif (rising_edge(clk)) then
+			if (rising_edge(clk)) then
 				THETA(I)	<= THETAnext(I);
 			end if;
 		end process THETA_I;
 		
 		VALID_I : process(clk, rst, valid)
 		begin
-			if (rst = '1') then
-				valid(I+1)	<= '0';
-			elsif (rising_edge(clk)) then
-				valid(I+1)	<= valid(I);
+			if (rising_edge(clk)) then
+				if (rst = '1') then
+					valid(I+1)	<= '0';
+				else
+					valid(I+1)	<= valid(I);
+				end if;
 			end if;
 		end process VALID_I;
 
 		G2: if I /= ROUNDS generate	
 			MODE_I : process(clk, rst, valid)
 			begin
-				if (rst = '1') then
-					modeBuff(I+1)	<= '0';
-				elsif (rising_edge(clk)) then
+				if (rising_edge(clk)) then
 					modeBuff(I+1)	<= modeBuff(I);
 				end if;
 			end process MODE_I;
