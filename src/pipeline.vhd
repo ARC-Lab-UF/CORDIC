@@ -53,85 +53,66 @@ architecture STR of pipeline is
 	-- Signals
 	---------------------------------------------------------------------------------------
 	type array_type1 is array (0 to ROUNDS) of std_logic_vector(WIDTH-1 downto 0);
-	type array_type3 is array (0 to ROUNDS+1) of std_logic_vector(0 downto 0);
+	type array_type2 is array (0 to ROUNDS+1) of std_logic;
 	signal X,Y,theta : array_type1;
 	signal Xnext,Ynext,thetanext : array_type1;
-	signal valid, modeBuff : array_type3;
+	signal valid, modeBuff : array_type2;
 	
 begin	
 	
 	Xnext(0)			<= X_in;
 	Ynext(0)			<= Y_in;
 	thetanext(0)	<= theta_in;
-	modeBuff(0)(0)	<= mode;
-	valid(0)(0)		<= valid_in;
+	modeBuff(0)		<= mode;
+	valid(0)			<= valid_in;
 	
 	G1: for I in 0 to ROUNDS generate
-			X_I: entity work.gen_reg
-			GENERIC MAP
-			(
-				WIDTH => WIDTH
-			)
-			PORT MAP
-			(
-				clk 		=> clk,
-				rst		=> rst,
-				input		=> Xnext(I),
-				output	=> X(I)
-			);
-			
-		Y_I: entity work.gen_reg
-			GENERIC MAP
-			(
-				WIDTH => WIDTH
-			)
-			PORT MAP
-			(
-				clk 		=> clk,
-				rst		=> rst,
-				input		=> Ynext(I),
-				output	=> Y(I)
-			);
-			
-		THETA_I: entity work.gen_reg
-			GENERIC MAP
-			(
-				WIDTH => WIDTH
-			)
-			PORT MAP
-			(
-				clk 		=> clk,
-				rst		=> rst,
-				input		=> thetanext(I),
-				output	=> theta(I)
-			);
-			
-		VALID_I: entity work.gen_reg
-			GENERIC MAP
-			(
-				WIDTH => 1
-			)
-			PORT MAP
-			(
-				clk 		=> clk,
-				rst		=> rst,
-				input		=> valid(I),
-				output	=> valid(I+1)
-			);
+		X_I : process(clk, rst, Xnext)
+		begin
+			if (rst = '1') then
+				X(I)	<= (OTHERS => '0');
+			elsif (rising_edge(clk)) then
+				X(I)	<= Xnext(I);
+			end if;
+		end process X_I;
+
+		Y_I : process(clk, rst, Ynext)
+		begin
+			if (rst = '1') then
+				Y(I)	<= (OTHERS => '0');
+			elsif (rising_edge(clk)) then
+				Y(I)	<= Ynext(I);
+			end if;
+		end process Y_I;
 		
-		G2: if I /= ROUNDS generate
-			MODE_I: entity work.gen_reg
-				GENERIC MAP
-				(
-					WIDTH => 1
-				)
-				PORT MAP
-				(
-					clk 		=> clk,
-					rst		=> rst,
-					input		=> modeBuff(I),
-					output	=> modeBuff(I+1)
-				);
+		
+		THETA_I : process(clk, rst, THETAnext)
+		begin
+			if (rst = '1') then
+				THETA(I)	<= (OTHERS => '0');
+			elsif (rising_edge(clk)) then
+				THETA(I)	<= THETAnext(I);
+			end if;
+		end process THETA_I;
+		
+		VALID_I : process(clk, rst, valid)
+		begin
+			if (rst = '1') then
+				valid(I+1)	<= '0';
+			elsif (rising_edge(clk)) then
+				valid(I+1)	<= valid(I);
+			end if;
+		end process VALID_I;
+
+		G2: if I /= ROUNDS generate	
+			MODE_I : process(clk, rst, valid)
+			begin
+				if (rst = '1') then
+					modeBuff(I+1)	<= '0';
+				elsif (rising_edge(clk)) then
+					modeBuff(I+1)	<= modeBuff(I);
+				end if;
+			end process MODE_I;
 				
 			CORE_I: entity work.cordic_core
 				GENERIC MAP
@@ -140,7 +121,7 @@ begin
 				)
 				PORT MAP
 				(
-					mode		=> modeBuff(I+1)(0),
+					mode		=> modeBuff(I+1),
 					Xin		=>	X(I),
 					Yin		=> Y(I),
 					thetain	=> theta(I),
@@ -155,6 +136,6 @@ begin
 	X_out 		<= X(ROUNDS);
 	Y_out 		<= Y(ROUNDS);
 	theta_out 	<= theta(ROUNDS);
-	valid_out 	<= valid(ROUNDS+1)(0);
+	valid_out 	<= valid(ROUNDS+1);
 	
 end STR;
