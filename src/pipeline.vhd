@@ -91,12 +91,10 @@ begin
 		
 		VALID_I : process(clk, rst, valid)
 		begin
-			if (rising_edge(clk)) then
-				if (rst = '1') then
-					valid(I+1)	<= '0';
-				else
-					valid(I+1)	<= valid(I);
-				end if;
+			if (rst = '1') then
+				valid(I+1)	<= '0';
+			elsif (rising_edge(clk)) then
+				valid(I+1)	<= valid(I);
 			end if;
 		end process VALID_I;
 
