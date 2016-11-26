@@ -39,7 +39,9 @@ architecture BHV of cordic_core is
 	 -- Signals
 	 ---------------------------------------------------------------------------------------
 	signal dir	: boolean;
-	begin
+	
+begin
+	
 	DIR_PROC :	process(mode, Yin, thetain)
 	begin
 		-- dir will default false
