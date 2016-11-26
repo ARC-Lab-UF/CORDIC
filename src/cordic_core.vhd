@@ -13,6 +13,7 @@ entity cordic_core is
 	PORT
 	(
 		mode		: in  std_logic;
+		itr		: in	natural;
 		
 		Xin		: in  std_logic_vector(WIDTH-1 downto 0);
 		Yin		: in  std_logic_vector(WIDTH-1 downto 0);
@@ -56,18 +57,18 @@ architecture BHV of cordic_core is
 		end case;
 	end process;
 	
-	ROT_PROC :	process(dir, Xin, Yin, thetaIn, delta)
+	ROT_PROC :	process(dir, itr, Xin, Yin, thetaIn, delta)
 	begin
 		case dir is
 			when true	=>
-				Xout 		<= std_logic_vector(unsigned(Xin) - unsigned(Yin));
-				Yout 		<= std_logic_vector(unsigned(Yin) + unsigned(Xin));
-				thetaOut <= std_logic_vector(unsigned(thetaIn) - unsigned(delta));
+				Xout 		<= std_logic_vector(signed(Xin) - shift_right(signed(Yin), itr));
+				Yout 		<= std_logic_vector(signed(Yin) + shift_right(signed(Xin), itr));
+				thetaOut <= std_logic_vector(signed(thetaIn) - signed(delta));
 				
 			when false	=>
-				Xout 		<= std_logic_vector(unsigned(Xin) + unsigned(Yin));
-				Yout 		<= std_logic_vector(unsigned(Yin) - unsigned(Xin));
-				thetaOut <= std_logic_vector(unsigned(thetaIn) + unsigned(delta));
+				Xout 		<= std_logic_vector(signed(Xin) + shift_right(signed(Yin), itr));
+				Yout 		<= std_logic_vector(signed(Yin) - shift_right(signed(Xin), itr));
+				thetaOut <= std_logic_vector(signed(thetaIn) + signed(delta));
 					
 			when OTHERS =>
 				NULL;

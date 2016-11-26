@@ -114,6 +114,7 @@ begin
 				PORT MAP
 				(
 					mode		=> modeBuff(I+1),
+					itr		=> I,
 					Xin		=>	X(I),
 					Yin		=> Y(I),
 					thetain	=> theta(I),
