@@ -19,7 +19,7 @@ entity cordic_core is
 		Yin		: in  std_logic_vector(WIDTH-1 downto 0);
 		thetain	: in  std_logic_vector(WIDTH-1 downto 0);
 		
-		delta		: in 	std_logic_vector(13 downto 0);
+		delta		: in 	std_logic_vector(WIDTH-1 downto 0);
 		
 		Xout		: out std_logic_vector(WIDTH-1 downto 0);
 		Yout		: out std_logic_vector(WIDTH-1 downto 0);
