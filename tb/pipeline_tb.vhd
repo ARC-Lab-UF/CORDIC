@@ -6,10 +6,10 @@ use ieee.numeric_std.all;
 use IEEE.math_real.all;
 
 
-entity tb is
-end tb;
+entity pipeline_tb is
+end pipeline_tb;
 
-architecture my_TB of tb is
+architecture TB of pipeline_tb is
 		signal done : std_logic := '0';
 
 		constant WIDTH  : positive := 32;
@@ -23,9 +23,6 @@ architecture my_TB of tb is
 		signal valid_out	: std_logic;
 		signal X_out, Y_out	: std_logic_vector(WIDTH-1 downto 0);
 		signal theta_out	: std_logic_vector(WIDTH-1 downto 0);
-
-		signal k   : std_logic_vector(WIDTH-1 downto 0) := (others => '0');
-		signal l   : std_logic_vector(WIDTH-1 downto 0) := (others => '0');
 
 begin
 	UUT : entity work.pipeline
@@ -55,62 +52,75 @@ begin
 
 		function gen_theta_value(I : NATURAL) return integer is
 			variable arc_tan_rad, arc_tan_deg	: real;
-			variable theta				: std_logic_vector(13 downto 0);
+			variable theta				: std_logic_vector(WIDTH-1 downto 0);
 		begin
 			arc_tan_rad 	:= ARCTAN(REAL(2**REAL(-I))) * REAL(256);
 			arc_tan_deg 	:= ROUND(arc_tan_rad * MATH_RAD_TO_DEG);
-			theta		:= STD_LOGIC_VECTOR(TO_UNSIGNED(NATURAL(arc_tan_deg), 14));
+			theta				:= STD_LOGIC_VECTOR(TO_UNSIGNED(NATURAL(arc_tan_deg), WIDTH));
 		
-			if (TO_INTEGER(UNSIGNED(theta)) <= 1) then
-				return to_integer(unsigned(std_logic_vector(to_unsigned(NATURAL(1),14))));
-			else
-				return to_integer(unsigned(theta));
-			end if;
+			return to_integer(unsigned(theta));
+
 		end gen_theta_value;
 
-		function check_coordic(X_in, Y_in : integer) return std_logic_vector is
-		variable x,y,theta : integer;
+		function check_coordic(Xin, Yin : integer) return std_logic_vector is
+		variable X, Y, THETA : integer;
+		
+		variable shift_value	: REAL;
+		variable shifted_X,
+					shifted_Y		: INTEGER;
 		begin
-			x	:= X_in;
-			y	:= Y_in;
+			X	:= Xin;
+			Y	:= Yin;
 			theta   := 0;
-			for i in 0 to ROUNDS loop
+			for I in 0 to ROUNDS loop
+				shift_value := 2**REAL(-I);
+				shifted_X	:= integer(floor(real(X) * shift_value));
+				shifted_Y 	:= integer(floor(real(Y) * shift_value));
+				
 				if Y >= 0 then
-					x := INTEGER(REAL(x) + REAL(y)*(2**REAL(-i)));
-					y := INTEGER(REAL(y) - REAL(x)*(2**REAL(-i)));
-					theta := theta + gen_theta_value(NATURAL(i));
+					X := X + shifted_Y;
+					Y := Y - shifted_X;
+					theta := theta + gen_theta_value(NATURAL(I));
 				else
-					x := INTEGER(REAL(x) - REAL(y)*(2**REAL(-i)));
-					y := INTEGER(REAL(y) + REAL(x)*(2**REAL(-i)));
-					theta := theta - gen_theta_value(NATURAL(i));
+					X := X - shifted_Y;
+					Y := Y + shifted_X;
+					theta := theta - gen_theta_value(NATURAL(I));
 				end if;
+				
 			end loop;
-			return std_logic_vector(to_unsigned(theta,WIDTH-1));
+			
+			return std_logic_vector(to_signed(theta, WIDTH));
 		end check_coordic;
+		
 	begin
+	
 		valid_in <= '0';
 		rst <= '1';
+		
 		wait for 200 ns;
+		
 		rst <= '0';
+		
 		wait until clk'event and clk = '1';
 		wait until clk'event and clk = '1';
 
-		for i in 0 to 1 loop
-			for j in 0 to 360 loop
-			k <= std_logic_vector(to_unsigned(i,WIDTH));
-			l <= std_logic_vector(to_unsigned(j,WIDTH));
+		for X in 200 to 200 loop
+			for Y in 100 to 100 loop
+			
 			mode	<= '0';
-			X_in	<= k;
-			Y_in	<= l;
+			X_in	<= std_logic_vector(to_signed(X, WIDTH));
+			Y_in	<= std_logic_vector(to_signed(Y,WIDTH));
 			theta_in <= (others => '0');
+			
 			valid_in <= '1';
 			wait until valid_out <= '1';
-			assert(theta_out = check_coordic(i, j)) report "Wrong value for x = " & integer'image(i) & " and y = " & integer'image(j) & " Got " & integer'image(to_integer(unsigned(theta_out))) & " instead of " & integer'image(to_integer(unsigned(check_coordic(i, j ))));	
+			assert(theta_out = check_coordic(X, Y)) report "Wrong value for x = " & integer'image(X) & " and y = " & integer'image(Y) & " Got " & integer'image(to_integer(unsigned(theta_out))) & " instead of " & integer'image(to_integer(unsigned(check_coordic(X, Y ))));	
 			valid_in <= '0';		
 			wait for 50 ns;
 			end loop;
 		end loop;
+		
 		done <= '1';
 		wait;
 	end process;
-end my_TB;
+end TB;

@@ -36,17 +36,14 @@ architecture STR of pipeline is
 	---------------------------------------------------------------------------------------
 	function gen_theta_value(I : NATURAL) return std_logic_vector is
 		variable arc_tan_rad, arc_tan_deg	: real;
-		variable theta								: std_logic_vector(13 downto 0);
+		variable theta								: std_logic_vector(WIDTH-1 downto 0);
 	begin
 		arc_tan_rad :=	ARCTAN(REAL(2**REAL(-I))) * REAL(256);
 		arc_tan_deg	:= ROUND(arc_tan_rad * MATH_RAD_TO_DEG);
-		theta			:=	STD_LOGIC_VECTOR(TO_UNSIGNED(NATURAL(arc_tan_deg), 14));
-		
-		if (TO_INTEGER(UNSIGNED(theta)) <= 1) then
-			return std_logic_vector(to_unsigned(NATURAL(1),14));
-		else
-			return theta;
-		end if;
+		theta			:=	STD_LOGIC_VECTOR(TO_UNSIGNED(NATURAL(arc_tan_deg), WIDTH));
+
+		return theta;
+
 	end gen_theta_value;
 	
 	---------------------------------------------------------------------------------------
