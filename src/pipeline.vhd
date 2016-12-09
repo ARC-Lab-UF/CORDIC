@@ -3,14 +3,16 @@ use IEEE.std_logic_1164.all;
 use IEEE.math_real.all;
 use IEEE.numeric_std.all;
 
+use work.user_pkg.all;
+
 ---------------------------------------------------------------------------------------
 -- 
 ---------------------------------------------------------------------------------------
 entity pipeline is
 	GENERIC
 	(
-		WIDTH			: positive := 32;
-		ROUNDS		: positive := 16
+		WIDTH			: positive := C_CORDIC_WIDTH;
+		ROUNDS		: positive := C_CORDIC_ROUNDS
 	);
 	PORT
 	(

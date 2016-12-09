@@ -2,13 +2,15 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
+use work.user_pkg.all;
+
 ---------------------------------------------------------------------------------------
 -- 
 ---------------------------------------------------------------------------------------
 entity cordic_core is
 	GENERIC
 	(
-		WIDTH		: positive := 32
+		WIDTH		: positive := C_CORDIC_WIDTH
 	);
 	PORT
 	(
