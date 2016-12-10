@@ -20,7 +20,7 @@ entity user_app is
         mmap_rd_en      : in  std_logic;
         mmap_rd_addr    : in  std_logic_vector(MMAP_ADDR_RANGE);
         mmap_rd_data    : out std_logic_vector(MMAP_DATA_RANGE)
-        );
+    );
 end user_app;
 
 architecture default of user_app is
@@ -178,7 +178,7 @@ begin
             waddr       => mem_in_wr_addr,
             wdata       => mem_in_wr_data,
             raddr       => mem_in_rd_addr,
-            rdata       => mem_in_rd_data(C_FIFO_WIDTH-1 downto 2*(C_FIFO_WIDTH/3))
+            rdata       => mem_in_rd_data(X_SLICE)
         );
 
     U_Y_MEM_IN : entity work.ram(SYNC_READ)
@@ -193,7 +193,7 @@ begin
             waddr       => mem_in_wr_addr,
             wdata       => mem_in_wr_data,
             raddr       => mem_in_rd_addr,
-            rdata       => mem_in_rd_data(2*(C_FIFO_WIDTH/3)-1 downto C_FIFO_WIDTH/3)
+            rdata       => mem_in_rd_data(Y_SLICE)
         );
 
     U_Z_MEM_IN : entity work.ram(SYNC_READ)
@@ -208,7 +208,7 @@ begin
             waddr       => mem_in_wr_addr,
             wdata       => mem_in_wr_data,
             raddr       => mem_in_rd_addr,
-            rdata       => mem_in_rd_data(C_FIFO_WIDTH/3-1 downto 0)
+            rdata       => mem_in_rd_data(Z_SLICE)
         );
 
     U_MEM_IN_ADDR_GEN : entity work.addr_gen
@@ -277,13 +277,13 @@ begin
             rst         => rst,
             mode        => pipeline_mode(0),
             valid_in    => dp_valid_in,
-            X_in        => dp_data_in(C_FIFO_WIDTH-1        downto 2*(C_FIFO_WIDTH/3)),
-            Y_in        => dp_data_in(2*(C_FIFO_WIDTH/3)-1  downto C_FIFO_WIDTH/3),
-            theta_in    => dp_data_in(C_FIFO_WIDTH/3-1      downto 0),
+            X_in        => dp_data_in(X_SLICE),
+            Y_in        => dp_data_in(Y_SLICE),
+            theta_in    => dp_data_in(Z_SLICE),
             valid_out   => dp_valid_out,
-            X_out       => dp_data_out(C_FIFO_WIDTH-1       downto 2*(C_FIFO_WIDTH/3)),
-            Y_out       => dp_data_out(2*(C_FIFO_WIDTH/3)-1 downto C_FIFO_WIDTH/3),
-            theta_out   => dp_data_out(C_FIFO_WIDTH/3-1     downto 0)
+            X_out       => dp_data_out(X_SLICE),
+            Y_out       => dp_data_out(Y_SLICE),
+            theta_out   => dp_data_out(Z_SLICE)
         );
 
     -- datapath has valid data whenever the input fifo isn't empty. Note that
@@ -328,9 +328,9 @@ begin
             clk         => clks(0),
             wen         => mem_out_wr_en,
             waddr       => mem_out_wr_addr,
-            wdata       => mem_out_wr_data(C_FIFO_WIDTH-1 downto 2*(C_FIFO_WIDTH/3)),
+            wdata       => mem_out_wr_data(X_SLICE),
             raddr       => mem_out_rd_addr,
-            rdata       => mem_out_rd_data(C_FIFO_WIDTH-1 downto 2*(C_FIFO_WIDTH/3))
+            rdata       => mem_out_rd_data(X_SLICE)
         );
 
     U_Y_MEM_OUT : entity work.ram(SYNC_READ)
@@ -343,9 +343,9 @@ begin
             clk         => clks(0),
             wen         => mem_out_wr_en,
             waddr       => mem_out_wr_addr,
-            wdata       => mem_out_wr_data(2*(C_FIFO_WIDTH/3)-1 downto C_FIFO_WIDTH/3),
+            wdata       => mem_out_wr_data(Y_SLICE),
             raddr       => mem_out_rd_addr,
-            rdata       => mem_out_rd_data(2*(C_FIFO_WIDTH/3)-1 downto C_FIFO_WIDTH/3)
+            rdata       => mem_out_rd_data(Y_SLICE)
         );
 
     U_Z_MEM_OUT : entity work.ram(SYNC_READ)
@@ -358,10 +358,10 @@ begin
             clk         => clks(0),
             wen         => mem_out_wr_en,
             waddr       => mem_out_wr_addr,
-            wdata       => mem_out_wr_data(C_FIFO_WIDTH/3-1 downto 0),
+            wdata       => mem_out_wr_data(Z_SLICE),
             raddr       => mem_out_rd_addr,
-            rdata       => mem_out_rd_data(C_FIFO_WIDTH/3-1 downto 0)
-        ;
+            rdata       => mem_out_rd_data(Z_SLICE)
+        );
 
     -- write to the memory any time there is data in the output FIFO. This
     -- assumes there is a valid address from the address generator, but that
