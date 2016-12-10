@@ -159,14 +159,13 @@ begin
         case rd_data_sel is
             when C_RD_DATA_SEL_X_MEM_OUT =>
                 rd_data(C_MEM_OUT_WIDTH-1 downto 0) <= mem_out_rd_data(C_FIFO_WIDTH-1 downto 2*(C_FIFO_WIDTH/3));
-				when C_RD_DATA_SEL_Y_MEM_OUT =>
+            when C_RD_DATA_SEL_Y_MEM_OUT =>
                 rd_data(C_MEM_OUT_WIDTH-1 downto 0) <= mem_out_rd_data(2*(C_FIFO_WIDTH/3)-1 downto C_FIFO_WIDTH/3);
-				when C_RD_DATA_SEL_Z_MEM_OUT =>
+            when C_RD_DATA_SEL_Z_MEM_OUT =>
                 rd_data(C_MEM_OUT_WIDTH-1 downto 0) <= mem_out_rd_data(C_FIFO_WIDTH/3-1 downto 0);
             when C_RD_DATA_SEL_REG =>
                 rd_data <= reg_rd_data;
             when others => null;
         end case;
     end process;
-	 
 end BHV;
