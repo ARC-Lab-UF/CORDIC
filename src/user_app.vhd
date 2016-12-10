@@ -102,7 +102,7 @@ begin
 				mem_load_mode		=> mem_load_mode,
 				mem_load_x			=> mem_load_x,
 				mem_load_y			=> mem_load_y,
-				mem_load_theta		=> mem_load_theta
+				mem_load_z		=> mem_load_theta
             );
 
 
