@@ -30,21 +30,20 @@ architecture default of user_app is
 
     signal mem_in_wr_data : std_logic_vector(C_MEM_IN_WIDTH-1 downto 0);
     signal mem_in_wr_addr : std_logic_vector(C_MEM_ADDR_WIDTH-1 downto 0);
-    signal mem_in_rd_data : std_logic_vector(C_MEM_IN_WIDTH-1 downto 0);
+    signal mem_in_rd_data : std_logic_vector(C_FIFO_WIDTH-1 downto 0);
     signal mem_in_rd_addr : std_logic_vector(C_MEM_ADDR_WIDTH-1 downto 0);
-    signal mem_in_wr_en   : std_logic;
 
-    signal mem_out_wr_data : std_logic_vector(C_MEM_OUT_WIDTH-1 downto 0);
+    signal mem_out_wr_data : std_logic_vector(C_FIFO_WIDTH-1 downto 0);
     signal mem_out_wr_addr : std_logic_vector(C_MEM_ADDR_WIDTH-1 downto 0);
-    signal mem_out_rd_data : std_logic_vector(C_MEM_OUT_WIDTH-1 downto 0);
+    signal mem_out_rd_data : std_logic_vector(C_FIFO_WIDTH-1 downto 0);
     signal mem_out_rd_addr : std_logic_vector(C_MEM_ADDR_WIDTH-1 downto 0);
     signal mem_out_wr_en   : std_logic;
 
     signal mem_in_addr_valid : std_logic;
     signal mem_in_data_valid : std_logic;
 
-    signal dp_data_in   : std_logic_vector(C_MEM_IN_WIDTH-1 downto 0);
-    signal dp_data_out  : std_logic_vector(C_MEM_OUT_WIDTH-1 downto 0);
+    signal dp_data_in   : std_logic_vector(C_FIFO_WIDTH-1 downto 0);
+    signal dp_data_out  : std_logic_vector(C_FIFO_WIDTH-1 downto 0);
     signal dp_valid_in  : std_logic;
     signal dp_valid_out : std_logic;
     signal dp_en        : std_logic;
@@ -59,6 +58,22 @@ architecture default of user_app is
 
     signal mem_out_fifo_empty : std_logic;
     signal mem_out_fifo_full  : std_logic;
+	 
+	 signal mem_load_mode		: std_logic;
+	 signal mem_load_x			: std_logic;
+	 signal mem_load_y			: std_logic;
+	 signal mem_load_theta		: std_logic;
+	 
+	 signal handshake_mode		: std_logic_vector(C_CORDIC_MODE_WIDTH-1 downto 0);
+	 signal handshake_rcv		: std_logic;
+	 signal handshake_go			: std_logic;
+	 
+	 signal pipeline_mode		: std_logic_vector(C_CORDIC_MODE_WIDTH-1 downto 0);
+	 signal pipeline_x			: std_logic_vector(C_CORDIC_WIDTH-1 downto 0);
+	 signal pipeline_y			: std_logic_vector(C_CORDIC_WIDTH-1 downto 0);
+	 signal pipeline_theta		: std_logic_vector(C_CORDIC_WIDTH-1 downto 0);
+	 
+	 
 
 begin
 
@@ -81,24 +96,61 @@ begin
             done            => done,
             mem_in_wr_data  => mem_in_wr_data,
             mem_in_wr_addr  => mem_in_wr_addr,
-            mem_in_wr_en    => mem_in_wr_en,
             mem_out_rd_data => mem_out_rd_data,
-            mem_out_rd_addr => mem_out_rd_addr
+            mem_out_rd_addr => mem_out_rd_addr,
+				
+				mem_load_mode		=> mem_load_mode,
+				mem_load_x			=> mem_load_x,
+				mem_load_y			=> mem_load_y,
+				mem_load_theta		=> mem_load_theta
             );
 
-    -- Input bram
-    U_MEM_IN : entity work.ram(SYNC_READ)
-        generic map (
-            num_words  => 2**C_MEM_ADDR_WIDTH,
-            word_width => C_MEM_IN_WIDTH,
-            addr_width => C_MEM_ADDR_WIDTH)
-        port map (
-            clk   => clks(0),
-            wen   => mem_in_wr_en,
-            waddr => mem_in_wr_addr,
-            wdata => mem_in_wr_data,
-            raddr => mem_in_rd_addr,
-            rdata => mem_in_rd_data);
+
+				
+	----------------------------------------------------------------------------------
+	--Mode Stuff
+				
+	 U_MODE_REG_CLKDMN_0 : entity work.reg
+		  generic map (
+				width => C_CORDIC_MODE_WIDTH)
+		  port map(
+				clk       => clks(0),
+				rst       => rst,
+				en        => mem_load_mode,
+				input     => mem_in_wr_data(C_CORDIC_MODE_WIDTH-1 downto 0),
+				output    => handshake_mode);
+				
+	U_MODE_REG : entity work.reg
+		  generic map (
+				width => 1)
+		  port map(
+				clk       => clks(0),
+				rst       => rst,
+				en        => '1',
+				input(0)     => mem_load_mode,
+				output(0)    => handshake_go);
+				
+				
+	 U_MODE_HANDSHAKE: entity work.handshake
+		  port map(
+				clk_src   => clks(0),
+				clk_dest  => clks(1),
+				rst       => rst,
+				go        => handshake_go,
+				delay_ack => '0',
+				rcv       => handshake_rcv);		
+				
+				
+	 U_MODE_REG_CLKDMN_1 : entity work.reg
+		  generic map (
+				width => C_CORDIC_MODE_WIDTH)
+		  port map(
+				clk       => clks(1),
+				rst       => rst,
+				en        => handshake_rcv,
+				input     => handshake_mode,
+				output    => pipeline_mode);
+	-------------------------------------------------------------------------------
 
     -- address generator for input memory. Notice there is only one addr_gen
     -- entity now instead of a separate one for the input and output memories.
@@ -111,6 +163,50 @@ begin
     -- programmable full flag that leaves enough room for all outstanding
     -- requests. 
 
+	 
+	     -- Input bram
+    U_X_MEM_IN : entity work.ram(SYNC_READ)
+        generic map (
+            num_words  => 2**C_MEM_ADDR_WIDTH,
+            word_width => C_MEM_IN_WIDTH,
+            addr_width => C_MEM_ADDR_WIDTH)
+        port map (
+            clk   => clks(0),
+            wen   => mem_load_x,
+            waddr => mem_in_wr_addr,
+            wdata => mem_in_wr_data,
+            raddr => mem_in_rd_addr,
+            rdata => mem_in_rd_data(C_FIFO_WIDTH-1 downto 2*(C_FIFO_WIDTH/3)));
+				
+		     -- Input bram
+    U_Y_MEM_IN : entity work.ram(SYNC_READ)
+        generic map (
+            num_words  => 2**C_MEM_ADDR_WIDTH,
+            word_width => C_MEM_IN_WIDTH,
+            addr_width => C_MEM_ADDR_WIDTH)
+        port map (
+            clk   => clks(0),
+            wen   => mem_load_y,
+            waddr => mem_in_wr_addr,
+            wdata => mem_in_wr_data,
+            raddr => mem_in_rd_addr,
+            rdata => mem_in_rd_data(2*(C_FIFO_WIDTH/3)-1 downto C_FIFO_WIDTH/3));
+				
+		     -- Input bram
+    U_THETA_MEM_IN : entity work.ram(SYNC_READ)
+        generic map (
+            num_words  => 2**C_MEM_ADDR_WIDTH,
+            word_width => C_MEM_IN_WIDTH,
+            addr_width => C_MEM_ADDR_WIDTH)
+        port map (
+            clk   => clks(0),
+            wen   => mem_load_theta,
+            waddr => mem_in_wr_addr,
+            wdata => mem_in_wr_data,
+            raddr => mem_in_rd_addr,
+            rdata => mem_in_rd_data(C_FIFO_WIDTH/3-1 downto 0));
+				
+	 
     U_MEM_IN_ADDR_GEN : entity work.addr_gen
         generic map (
             width => C_MEM_ADDR_WIDTH)
@@ -128,7 +224,7 @@ begin
     -- one cycle delay of the mem_in_valid signal, which corresponds to the time
     -- when valid data is available from the input memory
 
-    U_DELAY : entity work.delay
+    U_DELAY_FIFO : entity work.delay
         generic map (
             cycles => 1,
             width  => 1,
@@ -176,15 +272,15 @@ begin
         port map (
             clk       	=> clks(1),
             rst       	=> rst,
-				mode			=> dp_data_in(3*(C_MEM_IN_WIDTH/4)),
+				mode			=> pipeline_mode(0),
 				valid_in		=> dp_valid_in,
-				X_in			=> dp_data_in(3*(C_MEM_IN_WIDTH/4)-1 downto C_MEM_IN_WIDTH/2),
-				Y_in			=> dp_data_in(C_MEM_IN_WIDTH/2-1 downto C_MEM_IN_WIDTH/4),
-				theta_in		=> dp_data_in(C_MEM_IN_WIDTH/4-1 downto 0),
+				X_in			=> dp_data_in(C_FIFO_WIDTH-1 downto 2*(C_FIFO_WIDTH/3)),
+				Y_in			=> dp_data_in(2*(C_FIFO_WIDTH/3)-1 downto C_FIFO_WIDTH/3),
+				theta_in		=> dp_data_in(C_FIFO_WIDTH/3-1 downto 0),
 				valid_out	=> dp_valid_out,
-				X_out			=> dp_data_out(C_MEM_OUT_WIDTH-1 downto 2*(C_MEM_OUT_WIDTH/3)),
-				Y_out			=> dp_data_out(2*(C_MEM_OUT_WIDTH/3)-1 downto C_MEM_OUT_WIDTH/3),
-				theta_out	=> dp_data_out(C_MEM_OUT_WIDTH/3-1 downto 0)
+				X_out			=> dp_data_out(C_FIFO_WIDTH-1 downto 2*(C_FIFO_WIDTH/3)),
+				Y_out			=> dp_data_out(2*(C_FIFO_WIDTH/3)-1 downto C_FIFO_WIDTH/3),
+				theta_out	=> dp_data_out(C_FIFO_WIDTH/3-1 downto 0)
 				);
 
     -- datapath has valid data whenever the input fifo isn't empty. Note that
@@ -216,7 +312,7 @@ begin
             data_out => mem_out_wr_data);
 
     -- Output memory
-    U_MEM_OUT : entity work.ram(SYNC_READ)
+    U_X_MEM_OUT : entity work.ram(SYNC_READ)
         generic map (
             num_words  => 2**C_MEM_ADDR_WIDTH,
             word_width => C_MEM_OUT_WIDTH,
@@ -225,9 +321,38 @@ begin
             clk   => clks(0),
             wen   => mem_out_wr_en,
             waddr => mem_out_wr_addr,
-            wdata => mem_out_wr_data,
+            wdata => mem_out_wr_data(C_FIFO_WIDTH-1 downto 2*(C_FIFO_WIDTH/3)),
             raddr => mem_out_rd_addr,
-            rdata => mem_out_rd_data);
+            rdata => mem_out_rd_data(C_FIFO_WIDTH-1 downto 2*(C_FIFO_WIDTH/3))
+				);
+				
+	 U_Y_MEM_OUT : entity work.ram(SYNC_READ)
+        generic map (
+            num_words  => 2**C_MEM_ADDR_WIDTH,
+            word_width => C_MEM_OUT_WIDTH,
+            addr_width => C_MEM_ADDR_WIDTH)
+        port map (
+            clk   => clks(0),
+            wen   => mem_out_wr_en,
+            waddr => mem_out_wr_addr,
+            wdata => mem_out_wr_data(2*(C_FIFO_WIDTH/3)-1 downto C_FIFO_WIDTH/3),
+            raddr => mem_out_rd_addr,
+            rdata => mem_out_rd_data(2*(C_FIFO_WIDTH/3)-1 downto C_FIFO_WIDTH/3)
+				);
+				
+	 U_THETA_MEM_OUT : entity work.ram(SYNC_READ)
+        generic map (
+            num_words  => 2**C_MEM_ADDR_WIDTH,
+            word_width => C_MEM_OUT_WIDTH,
+            addr_width => C_MEM_ADDR_WIDTH)
+        port map (
+            clk   => clks(0),
+            wen   => mem_out_wr_en,
+            waddr => mem_out_wr_addr,
+            wdata => mem_out_wr_data(C_FIFO_WIDTH/3-1 downto 0),
+            raddr => mem_out_rd_addr,
+            rdata => mem_out_rd_data(C_FIFO_WIDTH/3-1 downto 0)
+				);
 
     -- write to the memory any time there is data in the output FIFO. This
     -- assumes there is a valid address from the address generator, but that
