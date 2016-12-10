@@ -30,20 +30,20 @@ entity memory_map is
         rd_data             : out std_logic_vector(MMAP_DATA_RANGE);
 
         -- app-specific signals
-        go              : out std_logic;
-        size            : out std_logic_vector(C_MEM_ADDR_WIDTH downto 0);
-        done            : in  std_logic;
+        go                  : out std_logic;
+        size                : out std_logic_vector(C_MEM_ADDR_WIDTH downto 0);
+        done                : in  std_logic;
 
-        mem_in_wr_data  : out std_logic_vector(C_MEM_IN_WIDTH-1 downto 0);
-        mem_in_wr_addr  : out std_logic_vector(C_MEM_ADDR_WIDTH-1 downto 0);
+        mem_in_wr_data      : out std_logic_vector(C_MEM_IN_WIDTH-1 downto 0);
+        mem_in_wr_addr      : out std_logic_vector(C_MEM_ADDR_WIDTH-1 downto 0);
 
-        mem_out_rd_data : in  std_logic_vector(C_FIFO_WIDTH-1 downto 0);
-        mem_out_rd_addr : out std_logic_vector(C_MEM_ADDR_WIDTH-1 downto 0);
+        mem_out_rd_data     : in  std_logic_vector(C_FIFO_WIDTH-1 downto 0);
+        mem_out_rd_addr     : out std_logic_vector(C_MEM_ADDR_WIDTH-1 downto 0);
 
-        mem_load_mode   : out std_logic;
-        mem_load_x      : out std_logic;
-        mem_load_y      : out std_logic;
-        mem_load_z      : out std_logic
+        mem_load_mode       : out std_logic;
+        mem_load_x          : out std_logic;
+        mem_load_y          : out std_logic;
+        mem_load_z          : out std_logic
     );
 end memory_map;
 
