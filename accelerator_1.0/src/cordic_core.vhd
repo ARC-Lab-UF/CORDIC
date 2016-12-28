@@ -45,9 +45,7 @@ architecture STR of cordic_core is
     ---------------------------------------------------------------------------------------
     alias coor_system_a                 : std_logic_vector(1 downto 0) is mode(2 downto 1);
     alias mode_a                        : std_logic is mode(0);
-    
-    signal dir                          : boolean;
-    
+
     signal sigma, x_sigma               : std_logic;
     signal x_addr_out                   : std_logic_vector(WIDTH-1 downto 0);
 
@@ -120,35 +118,38 @@ begin
                 Xout <= x_addr_out;
         end case;
     end process;
-        
-    DIR_PROC :  process(mode_a, Yin, Zin)
+    
+    ---------------------------------------------------------------------------------------
+    -- The sigma term is used to determine the sign of the addition for each output. The
+    --  sigma generator uses the sign of either Zin or Yin if it is in rotational mode or
+    --  vectoring mode respectivley.
+    ---------------------------------------------------------------------------------------
+    SIGMA_GEN : process(mode_a, Zin'left, Yin'left)
     begin
-        -- dir will default false
-        dir <= false;
-
         case mode_a is
             when MODE_VECTORING =>
-                dir <= (signed(Yin) < 0);
+                sigma <= not(Yin'left);
 
             when MODE_ROTATION =>
-                dir <= (signed(Zin) >= 0);
+                sigma <= Zin'left;
 
-            when OTHERS =>
-                NULL;
+            when others =>
+                -- Shouldn't be able to reach this point.
+                null;
         end case;
     end process;
 
-    Y_ROT_PROC :  process(dir, itr, Xin, Yin, Zin, alpha)
+    X_SIGMA_MUX : process(coor_system_a, sigma)
     begin
-        case dir is
-            when true   =>
-                Xout    <= std_logic_vector(signed(Xin) - shift_right(signed(Yin), itr));
+        case coor_system_a is
+            when COORD_SYS_CIRCULAR =>
+                x_sigma <= not(sigma);
 
-            when false  =>
-                Xout    <= std_logic_vector(signed(Xin) + shift_right(signed(Yin), itr));
+            when COORD_SYS_HYPERBOLIC =>
+                x_sigma <= sigma;
 
-            when OTHERS =>
-                NULL;
+            when others =>
+                x_sigma <= '-';
         end case;
-    end process; 
- end BHV;
+    end process;
+ end STR;
