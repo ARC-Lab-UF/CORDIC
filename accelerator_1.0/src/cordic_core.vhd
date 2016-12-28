@@ -47,7 +47,7 @@ architecture STR of cordic_core is
     alias mode_a                        : std_logic is mode(0);
 
     signal sigma, x_sigma               : std_logic;
-    signal x_addr_out                   : std_logic_vector(WIDTH-1 downto 0);
+    signal x_add_out                   : std_logic_vector(WIDTH-1 downto 0);
 
 begin
     ---------------------------------------------------------------------------------------
@@ -55,7 +55,7 @@ begin
     --  coordinate system. Sigma determines the sign of the add_sub.
     ---------------------------------------------------------------------------------------
     -- Yout = Yin + (sigma * Xin * 2^(-i))
-    Y_ADDR  :   entity work.add_sub
+    Y_ADD   :   entity work.add_sub
         GENERIC MAP
         (
             WIDTH       => WIDTH
@@ -69,7 +69,7 @@ begin
         );
 
     -- Zout = Zin - (sigma * alpha)
-    Z_ADDR  :   entity work.add_sub
+    Z_ADD   :   entity work.add_sub
         GENERIC MAP
         (
             WIDTH       => WIDTH
@@ -95,7 +95,7 @@ begin
     -- } else if(COORD_SYS_HYPERBOLIC) {
     --  Xout = Xin + (sigms * Yin * 2^(-i));
     -- }
-    X_ADDR  :   entity work.add_sub
+    X_ADD   :   entity work.add_sub
         GENERIC MAP
         (
             WIDTH       => WIDTH
@@ -105,17 +105,17 @@ begin
             input_a     => Xin,
             input_b     => std_logic_vector(shift_right(signed(Yin), itr)),
             add_nsub    => x_sigma,
-            output      => x_addr_out
+            output      => x_add_out
         );
         
-    X_MUX : process(coor_system_a)
+    X_MUX : process(coor_system_a, Xin, x_add_out)
     begin
         case(coor_system_a) is
             when "00" =>
                 Xout <= Xin;
 
             when others =>
-                Xout <= x_addr_out;
+                Xout <= x_add_out;
         end case;
     end process;
     
@@ -124,14 +124,14 @@ begin
     --  sigma generator uses the sign of either Zin or Yin if it is in rotational mode or
     --  vectoring mode respectivley.
     ---------------------------------------------------------------------------------------
-    SIGMA_GEN : process(mode_a, Zin'left, Yin'left)
+    SIGMA_GEN : process(mode_a, Zin, Yin)
     begin
         case mode_a is
             when MODE_VECTORING =>
-                sigma <= not(Yin'left);
+                sigma <= not(Yin(WIDTH-1));
 
             when MODE_ROTATION =>
-                sigma <= Zin'left;
+                sigma <= Zin(WIDTH-1);
 
             when others =>
                 -- Shouldn't be able to reach this point.

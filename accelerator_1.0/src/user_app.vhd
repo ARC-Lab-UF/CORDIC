@@ -275,7 +275,7 @@ begin
         port map (
             clk         => clks(1),
             rst         => rst,
-            mode        => pipeline_mode(0),
+            mode        => pipeline_mode,
             valid_in    => dp_valid_in,
             X_in        => dp_data_in(X_SLICE),
             Y_in        => dp_data_in(Y_SLICE),
