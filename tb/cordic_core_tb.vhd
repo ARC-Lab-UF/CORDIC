@@ -14,7 +14,7 @@ architecture TB of cordic_core_tb is
 	signal done			: std_logic := '0';
 	
 	-- UUT
-	signal mode			: std_logic := '0';
+	signal mode			: std_logic_vector(2 downto 0) := "010";
 	signal itr			: natural	:= 0;
 	
 	signal Xin, Yin	: std_logic_vector(WIDTH-1 downto 0) := (others => '0');
@@ -38,13 +38,13 @@ begin
 			
 			Xin		=> Xin,
 			Yin		=> Yin,
-			thetain	=> thetain,
+			Zin	=> thetain,
 			
-			delta		=> delta,
+			alpha		=> delta,
 			
 			Xout		=> Xout,
 			Yout		=> Yout,
-			thetaout => thetaout
+			Zout => thetaout
 		);
 	
 	process
@@ -79,11 +79,11 @@ begin
 	
 		wait for 10 ns; -- Just a pause at the start
 		
-		itr_loop : for I in 0 to 50 loop
-			x_loop : for X in 0 to 50 loop
-				y_loop : for Y in -50 to 50 loop
-					theta_loop : for THETA in 0 to 50 loop
-						delta_loop : for DELTAA in 0 to 50 loop
+		itr_loop : for I in 0 to 5 loop
+			x_loop : for X in 0 to 5 loop
+				y_loop : for Y in -5 to 5 loop
+					theta_loop : for THETA in 0 to 5 loop
+						delta_loop : for DELTAA in 0 to 5 loop
 							-- Set the values to input into CORDIC core
 							itr 		<= i;
 							Xin 		<= std_logic_vector(to_signed(X, WIDTH));
@@ -91,7 +91,7 @@ begin
 							thetain 	<= std_logic_vector(to_signed(THETA, WIDTH));
 							delta		<= std_logic_vector(to_signed(DELTAA, WIDTH));
 					
-							mode <= '0';
+							mode <= "010";
 							wait for 1 ns; -- wait for output
 							
 							-- Check the outputs
@@ -178,7 +178,7 @@ begin
 							wait for 1 ns; -- wait a little longer
 							
 							-- Change modes
-							mode <= '1';
+							mode <= "011";
 							wait for 1 ns;
 							
 							if (signed(thetain) >= 0) then

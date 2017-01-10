@@ -2,7 +2,7 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
-use work.user_pkg.all;
+--use work.user_pkg.all;
 
 ---------------------------------------------------------------------------------------
 -- 
@@ -10,7 +10,7 @@ use work.user_pkg.all;
 entity cordic_core is
     GENERIC
     (
-        WIDTH       : positive := C_CORDIC_WIDTH
+        WIDTH       : positive := 32
     );
     PORT
     (
@@ -47,9 +47,17 @@ architecture STR of cordic_core is
     alias mode_a                        : std_logic is mode(0);
 
     signal sigma, x_sigma               : std_logic;
-    signal x_add_out                   : std_logic_vector(WIDTH-1 downto 0);
+    signal x_add_out                    : std_logic_vector(WIDTH-1 downto 0);
+    
+    signal shiftedX, shiftedY           : std_logic_vector(WIDTH-1 downto 0);
+    signal nsigma                       : std_logic;
 
 begin
+    -- Create the shifted values
+    shiftedX    <= std_logic_vector(shift_right(signed(Xin), itr));
+    shiftedY    <= std_logic_vector(shift_right(signed(Yin), itr));
+    nsigma      <= not(sigma);
+
     ---------------------------------------------------------------------------------------
     -- Handling the Y and Z inputs is simple, since they function the same regardless of the
     --  coordinate system. Sigma determines the sign of the add_sub.
@@ -63,7 +71,7 @@ begin
         PORT MAP
         (
             input_a     => Yin,
-            input_b     => std_logic_vector(shift_right(signed(Xin), itr)),
+            input_b     => shiftedX,
             add_nsub    => sigma,
             output      => Yout
         );
@@ -78,7 +86,7 @@ begin
         (
             input_a     => Zin,
             input_b     => alpha,
-            add_nsub    => not(sigma),
+            add_nsub    => nsigma,
             output      => Zout
         );
 
@@ -103,7 +111,7 @@ begin
         PORT MAP
         (
             input_a     => Xin,
-            input_b     => std_logic_vector(shift_right(signed(Yin), itr)),
+            input_b     => shiftedY,
             add_nsub    => x_sigma,
             output      => x_add_out
         );
@@ -128,10 +136,10 @@ begin
     begin
         case mode_a is
             when MODE_VECTORING =>
-                sigma <= not(Yin(WIDTH-1));
+                sigma <= Yin(WIDTH-1);
 
             when MODE_ROTATION =>
-                sigma <= Zin(WIDTH-1);
+                sigma <= not(Zin(WIDTH-1));
 
             when others =>
                 -- Shouldn't be able to reach this point.

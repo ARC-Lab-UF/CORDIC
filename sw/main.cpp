@@ -69,7 +69,7 @@ void sw_cordic(unsigned *x_input, unsigned *y_input, unsigned *z_input,
 
         signed theta        = signed(round(atan((1/pow(2, j))) * 256 * rad_to_deg));
 
-        if(mode)
+        if(mode & 0x1)
         {
             dir = z < 0;
         } else
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
     #endif
 
     unsigned size = 100;
-    unsigned mode = 0;
+    unsigned mode = 2;
 
     unsigned go, done;
     unsigned *x_input, *y_input, *z_input,
