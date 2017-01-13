@@ -29,24 +29,31 @@ end pipeline;
 
 architecture STR of pipeline is
     ---------------------------------------------------------------------------------------
-    -- gen_theta_value(I    : NATURAL) return STD_LOGIC_VECTOR
-    --      Function used to generate the round theta constants used in the CORDIC
+    -- Constants
+    ---------------------------------------------------------------------------------------
+    constant COORD_SYS_CIRCULAR         : std_logic_vector(1 downto 0)  := "01";
+    constant COORD_SYS_LINEAR           : std_logic_vector(1 downto 0)  := "00";
+    constant COORD_SYS_HYPERBOLIC       : std_logic_vector(1 downto 0)  := "11";
+
+    ---------------------------------------------------------------------------------------
+    -- gen_alpha_value(I    : NATURAL) return STD_LOGIC_VECTOR
+    --      Function used to generate the round alpha constants used in the CORDIC
     --      operations.
     --
     --      TODO: Right now the resolution is 1/256th of a degree. This should be
     --              adjustable.
     ---------------------------------------------------------------------------------------
-    function gen_theta_value(I : NATURAL) return std_logic_vector is
+    function gen_alpha_value(I : NATURAL) return std_logic_vector is
         variable arc_tan_rad, arc_tan_deg   : real;
-        variable theta                      : std_logic_vector(WIDTH-1 downto 0);
+        variable alpha                      : std_logic_vector(WIDTH-1 downto 0);
     begin
         arc_tan_rad :=  ARCTAN(REAL(2**REAL(-I))) * REAL(256);
         arc_tan_deg	:= ROUND(arc_tan_rad * MATH_RAD_TO_DEG);
-        theta           :=  STD_LOGIC_VECTOR(TO_UNSIGNED(NATURAL(arc_tan_deg), WIDTH));
+        alpha           :=  STD_LOGIC_VECTOR(TO_UNSIGNED(NATURAL(arc_tan_deg), WIDTH));
 
-        return theta;
+        return alpha;
 
-    end gen_theta_value;
+    end gen_alpha_value;
 
     ---------------------------------------------------------------------------------------
     -- Signals
@@ -54,50 +61,52 @@ architecture STR of pipeline is
     type array_type1 is array (0 to ROUNDS) of std_logic_vector(WIDTH-1 downto 0);
     type array_type2 is array (0 to ROUNDS+1) of std_logic;
     type array_type3 is array (0 to ROUNDS+1) of std_logic_vector(2 downto 0);
-    signal X,Y,theta                : array_type1;
-    signal Xnext,Ynext,thetanext    : array_type1;
+    type array_type4 is array (0 to ROUNDS-1) of natural;
+    signal X,Y,Z                    : array_type1;
+    signal Xnext,Ynext,Znext        : array_type1;
     signal valid                    : array_type2;
     signal modeBuff                 : array_type3;
+    
+    signal ITR : array_type4;
 
 begin
 
     Xnext(0)        <= X_in;
     Ynext(0)        <= Y_in;
-    thetanext(0)    <= theta_in;
+    Znext(0)        <= theta_in;
     modeBuff(0)     <= mode;
     valid(0)        <= valid_in;
 
     G1: for I in 0 to ROUNDS generate
-		X_I : process(clk, rst, Xnext)
-		begin
-			if (rising_edge(clk)) then
-				X(I)	<= Xnext(I);
-			end if;
-		end process X_I;
+        X_I : process(clk, rst, Xnext)
+        begin
+        if (rising_edge(clk)) then
+        X(I)    <= Xnext(I);
+            end if;
+        end process X_I;
 
-		Y_I : process(clk, rst, Ynext)
-		begin
-			if (rising_edge(clk)) then
-				Y(I)	<= Ynext(I);
-			end if;
-		end process Y_I;
-		
-		
-		THETA_I : process(clk, rst, THETAnext)
-		begin
-			if (rising_edge(clk)) then
-				THETA(I)	<= THETAnext(I);
-			end if;
-		end process THETA_I;
-		
-		VALID_I : process(clk, rst, valid)
-		begin
-			if (rst = '1') then
-				valid(I+1)	<= '0';
-			elsif (rising_edge(clk)) then
-				valid(I+1)	<= valid(I);
-			end if;
-		end process VALID_I;
+        Y_I : process(clk, rst, Ynext)
+        begin
+        if (rising_edge(clk)) then
+        Y(I)    <= Ynext(I);
+            end if;
+        end process Y_I;
+
+        Z_I : process(clk, rst, Znext)
+        begin
+            if (rising_edge(clk)) then
+                Z(I)    <= Znext(I);
+            end if;
+        end process Z_I;
+
+        VALID_I : process(clk, rst, valid)
+        begin
+            if (rst = '1') then
+                valid(I+1)	<= '0';
+            elsif (rising_edge(clk)) then
+                valid(I+1)	<= valid(I);
+            end if;
+        end process VALID_I;
 
         G2: if I /= ROUNDS generate	
             MODE_I : process(clk, rst, valid)
@@ -107,6 +116,23 @@ begin
                 end if;
             end process MODE_I;
 
+        ITR_MUX: process(modeBuff(I+1)(2 downto 1))
+            begin
+                case modeBuff(I+1)(2 downto 1) is
+                    when COORD_SYS_CIRCULAR =>
+                        ITR(I) <= I;
+
+                    when COORD_SYS_LINEAR =>
+                        ITR(I) <= I + 1;
+
+                    when COORD_SYS_HYPERBOLIC =>
+                        ITR(I) <= I;
+
+                    when OTHERS =>
+                        ITR(I) <= I;
+                end case;
+            end process ITR_MUX;
+
         CORE_I: entity work.cordic_core
             GENERIC MAP
                 (
@@ -115,21 +141,21 @@ begin
                 PORT MAP
                 (
                     mode        => modeBuff(I+1),
-                    itr         => I,
-                    Xin         =>	X(I),
+                    itr         => ITR(I),
+                    Xin         => X(I),
                     Yin         => Y(I),
-                    Zin         => theta(I),
-                    alpha       => gen_theta_value(I),
+                    Zin         => Z(I),
+                    alpha       => gen_alpha_value(I),
                     Xout        => Xnext(I+1),
                     Yout        => Ynext(I+1),
-                    Zout        => thetanext(I+1)
+                    Zout        => Znext(I+1)
                 );
         end generate G2;
     end generate G1;
 
     X_out       <= X(ROUNDS);
     Y_out       <= Y(ROUNDS);
-    theta_out   <= theta(ROUNDS);
+    theta_out   <= Z(ROUNDS);
     valid_out   <= valid(ROUNDS+1);
 
 end STR;
