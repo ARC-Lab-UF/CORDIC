@@ -61,13 +61,13 @@ architecture STR of pipeline is
     type array_type1 is array (0 to ROUNDS) of std_logic_vector(WIDTH-1 downto 0);
     type array_type2 is array (0 to ROUNDS+1) of std_logic;
     type array_type3 is array (0 to ROUNDS+1) of std_logic_vector(2 downto 0);
-    type array_type4 is array (0 to ROUNDS-1) of natural;
+    type array_type4 is array (0 to ROUNDS-1) of std_logic_vector(7 downto 0);
     signal X,Y,Z                    : array_type1;
     signal Xnext,Ynext,Znext        : array_type1;
     signal valid                    : array_type2;
     signal modeBuff                 : array_type3;
     
-    signal ITR : array_type4;
+    signal ITR                      : array_type4;
 
 begin
 
@@ -108,7 +108,7 @@ begin
             end if;
         end process VALID_I;
 
-        G2: if I /= ROUNDS generate	
+        G2: if I /= ROUNDS generate
             MODE_I : process(clk, rst, valid)
             begin
                 if (rising_edge(clk)) then
@@ -116,24 +116,73 @@ begin
                 end if;
             end process MODE_I;
 
-        ITR_MUX: process(modeBuff(I+1)(2 downto 1))
-            begin
-                case modeBuff(I+1)(2 downto 1) is
-                    when COORD_SYS_CIRCULAR =>
-                        ITR(I) <= I;
+            G3: if I <= 3 generate
+                ITR_MUX_I: entity work.itr_mux
+                PORT MAP
+                (
+                    sel => modeBuff(I+1)(2 downto 1),
+                    A   => std_logic_vector(to_unsigned(I + 1, 8)), -- Linear
+                    B   => std_logic_vector(to_unsigned(I, 8)),     -- Circular
+                    c   => (others => '-'),                         -- Undefined
+                    D   => std_logic_vector(to_unsigned(I + 1, 8)), -- Hyperbolic
+                    Y   => ITR(I)
+                );
+            end generate G3;
+            
+            G4: if (I > 3 AND I <= 13) generate
+                ITR_MUX_I: entity work.itr_mux
+                PORT MAP
+                (
+                    sel => modeBuff(I+1)(2 downto 1),
+                    A   => std_logic_vector(to_unsigned(I + 1, 8)), -- Linear
+                    B   => std_logic_vector(to_unsigned(I, 8)),     -- Circular
+                    c   => (others => '-'),                         -- Undefined
+                    D   => std_logic_vector(to_unsigned(I, 8)),     -- Hyperbolic
+                    Y   => ITR(I)
+                );
+            end generate G4;
+            
+            G5: if (I > 13 AND I <= 40) generate
+                ITR_MUX_I: entity work.itr_mux
+                PORT MAP
+                (
+                    sel => modeBuff(I+1)(2 downto 1),
+                    A   => std_logic_vector(to_unsigned(I + 1, 8)), -- Linear
+                    B   => std_logic_vector(to_unsigned(I, 8)),     -- Circular
+                    c   => (others => '-'),                         -- Undefined
+                    D   => std_logic_vector(to_unsigned(I - 1, 8)), -- Hyperbolic
+                    Y   => ITR(I)
+                );
+            end generate G5;
 
-                    when COORD_SYS_LINEAR =>
-                        ITR(I) <= I + 1;
+            G6: if (I > 40 AND I <= 121) generate
+                ITR_MUX_I: entity work.itr_mux
+                PORT MAP
+                (
+                    sel => modeBuff(I+1)(2 downto 1),
+                    A   => std_logic_vector(to_unsigned(I + 1, 8)), -- Linear
+                    B   => std_logic_vector(to_unsigned(I, 8)),     -- Circular
+                    c   => (others => '-'),                         -- Undefined
+                    D   => std_logic_vector(to_unsigned(I - 2, 8)), -- Hyperbolic
+                    Y   => ITR(I)
+                );
+            end generate G6;
 
-                    when COORD_SYS_HYPERBOLIC =>
-                        ITR(I) <= I;
+            G7: if (I > 121) generate -- ITR is only 8 bits, so we won't get ot 364
+                ITR_MUX_I: entity work.itr_mux
+                PORT MAP
+                (
+                    sel => modeBuff(I+1)(2 downto 1),
+                    A   => std_logic_vector(to_unsigned(I + 1, 8)), -- Linear
+                    B   => std_logic_vector(to_unsigned(I, 8)),     -- Circular
+                    c   => (others => '-'),                         -- Undefined
+                    D   => std_logic_vector(to_unsigned(I - 3, 8)), -- Hyperbolic
+                    Y   => ITR(I)
+                );
+            end generate G7;
 
-                    when OTHERS =>
-                        ITR(I) <= I;
-                end case;
-            end process ITR_MUX;
 
-        CORE_I: entity work.cordic_core
+            CORE_I: entity work.cordic_core
             GENERIC MAP
                 (
                     WIDTH => WIDTH
@@ -141,7 +190,7 @@ begin
                 PORT MAP
                 (
                     mode        => modeBuff(I+1),
-                    itr         => ITR(I),
+                    itr         => TO_INTEGER(UNSIGNED(ITR(I))),
                     Xin         => X(I),
                     Yin         => Y(I),
                     Zin         => Z(I),
