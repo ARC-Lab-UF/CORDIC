@@ -183,7 +183,7 @@ begin
 
 
             CORE_I: entity work.cordic_core
-            GENERIC MAP
+                GENERIC MAP
                 (
                     WIDTH => WIDTH
                 )
